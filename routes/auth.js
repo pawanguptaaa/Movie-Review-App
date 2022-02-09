@@ -28,16 +28,24 @@ router.post('/register',async(req,res) => {
        password: hashedPassword
 
     };
+    
+    await User.create(user).then(savedUser=>{
+        console.log(savedUser);
+        res.send(savedUser);
+       }).catch((err) => {
+        console.log(err);
+      });
 
-    try{
-         const savedUser = await User.create(user);
-         console.log(savedUser);
-          res.send(savedUser);
-       }
-       catch(err){
-        res.status(400).send(err);
+   // try{
+     //    const savedUser = await User.create(user);
+       //  console.log(savedUser);
+         // res.send(savedUser);
+       //}
+       //catch(err){
+        //res.status(400).send(err);
         
-    }
+    //}
+    
 });
 
 
