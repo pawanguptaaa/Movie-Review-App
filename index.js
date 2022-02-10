@@ -5,9 +5,8 @@ const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 
 dotenv.config();
-
-
 const authRoute = require('./routes/auth');
+const movieRoute = require('./routes/movies');
 
 
 mongoose.connect(process.env.DB_CONNECT,{ useNewUrlParser: true},() => console.log('Connected to db!'));
@@ -16,6 +15,8 @@ mongoose.connect(process.env.DB_CONNECT,{ useNewUrlParser: true},() => console.l
 app.use(express.json());
 
 app.use('/api/user', authRoute);
+app.use('/api/movies', movieRoute);
 
 app.listen(3000, () => console.log('Server up and running'));
+
 
