@@ -16,9 +16,6 @@ const commentSchema = mongoose.Schema({
   content: {
     type: String,
   },
-  replyComment: {
-    type: Number,
-  },
 });
 
 const Comment = mongoose.model("Comment", commentSchema);
