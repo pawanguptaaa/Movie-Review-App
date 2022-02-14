@@ -2,16 +2,15 @@ const router = require("express").Router();
 const User = require("../model/User");
 const CryptoJS = require("crypto-js");
 const verify = require("../verifyToken");
+const jwt = require("jsonwebtoken");
 //UPDATE
 
 router.put("/:id", verify, async (req, res) => {
-  if (req.user.id === req.params.id || req.user.isAdmin) {
-    if (req.body.password) {
-      req.body.password = CryptoJS.AES.encrypt(
-        req.body.password,
-        process.env.TOKEN_SECRET
-      ).toString();
-    }
+  const token =req.body.token || req.query.token || req.headers["auth-token"];
+  const decode = jwt.verify(token, "apappapjjgdoehjdgjgshgfd");
+  const user = await User.findById({ _id: decode._id });
+  if (user.isAdmin) {
+    
 
     try {
       const updatedUser = await User.findByIdAndUpdate(
@@ -32,7 +31,10 @@ router.put("/:id", verify, async (req, res) => {
 
 //DELETE
 router.delete("/:id", verify, async (req, res) => {
-  if (req.user.id === req.params.id || req.user.isAdmin) {
+  const token =req.body.token || req.query.token || req.headers["auth-token"];
+  const decode = jwt.verify(token, "apappapjjgdoehjdgjgshgfd");
+  const user = await User.findById({ _id: decode._id });
+  if (user.isAdmin) {
     try {
       await User.findByIdAndDelete(req.params.id);
       res.status(200).json("User has been deleted...");
@@ -58,19 +60,19 @@ router.get("/find/:id", async (req, res) => {
 
 //GET ALL
 router.get("/", verify, async (req, res) => {
-  const query = req.query.new;
-  if (req.user.isAdmin) {
+  const token =req.body.token || req.query.token || req.headers["auth-token"];
+  const decode = jwt.verify(token, "apappapjjgdoehjdgjgshgfd");
+  const user = await User.findById({ _id: decode._id });
+ 
     try {
-      const users = query
+      const users = token
         ? await User.find().sort({ _id: -1 }).limit(5)
         : await User.find();
       res.status(200).json(users);
     } catch (err) {
       res.status(500).json(err);
     }
-  } else {
-    res.status(403).json("You are not allowed to see all users!");
-  }
+  
 });
 
 //GET USER STATS

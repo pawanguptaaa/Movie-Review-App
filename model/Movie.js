@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const Schema = mongoose.Schema;
 
 const MovieSchema = new mongoose.Schema(
   {
@@ -17,14 +16,6 @@ const MovieSchema = new mongoose.Schema(
     genre: { 
         type: String 
     },
-    movielike: {
-      type: Schema.Types.ObjectId,
-      ref: "MovieLike",
-    },
-    moviedislike: {
-      type: Schema.Types.ObjectId,
-      ref: "MovieDisLike",
-    }
   },
 
   { timestamps: true }
