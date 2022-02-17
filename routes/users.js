@@ -3,15 +3,16 @@ const User = require("../model/User");
 const CryptoJS = require("crypto-js");
 const verify = require("../verifyToken");
 const jwt = require("jsonwebtoken");
+const Errors = require("../errors");
+
+const { UnAuthorisedError, BadRequest, STATUS_CODES, ErrorCodes } = Errors;
 //UPDATE
 
 router.put("/:id", verify, async (req, res) => {
-  const token =req.body.token || req.query.token || req.headers["auth-token"];
+  const token = req.body.token || req.query.token || req.headers["auth-token"];
   const decode = jwt.verify(token, "apappapjjgdoehjdgjgshgfd");
   const user = await User.findById({ _id: decode._id });
   if (user.isAdmin) {
-    
-
     try {
       const updatedUser = await User.findByIdAndUpdate(
         req.params.id,
@@ -20,29 +21,41 @@ router.put("/:id", verify, async (req, res) => {
         },
         { new: true }
       );
-      res.status(200).json(updatedUser);
+      res.send(updatedUser);
     } catch (err) {
-      res.status(500).json(err);
+      throw new BadRequest(
+        "server error !",
+        STATUS_CODES.INTERNAL_SERVER_ERROR
+      );
     }
   } else {
-    res.status(403).json("You can update only your account!");
+    throw new UnAuthorisedError(
+      "Unauthorized request !",
+      STATUS_CODES.UNAUTHENTICATED_REQUEST
+    );
   }
 });
 
 //DELETE
 router.delete("/:id", verify, async (req, res) => {
-  const token =req.body.token || req.query.token || req.headers["auth-token"];
+  const token = req.body.token || req.query.token || req.headers["auth-token"];
   const decode = jwt.verify(token, "apappapjjgdoehjdgjgshgfd");
   const user = await User.findById({ _id: decode._id });
   if (user.isAdmin) {
     try {
       await User.findByIdAndDelete(req.params.id);
-      res.status(200).json("User has been deleted...");
+      res.send("User has been deleted...");
     } catch (err) {
-      res.status(500).json(err);
+      throw new BadRequest(
+        "server error !",
+        STATUS_CODES.INTERNAL_SERVER_ERROR
+      );
     }
   } else {
-    res.status(403).json("You can delete only your account!");
+    throw new UnAuthorisedError(
+      "Unauthorized request !",
+      STATUS_CODES.UNAUTHENTICATED_REQUEST
+    );
   }
 });
 
@@ -52,27 +65,26 @@ router.get("/find/:id", async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     const { password, ...info } = user._doc;
-    res.status(200).json(info);
+    res.send(info);
   } catch (err) {
-    res.status(500).json(err);
+    throw new BadRequest("server error !", STATUS_CODES.INTERNAL_SERVER_ERROR);
   }
 });
 
 //GET ALL
 router.get("/", verify, async (req, res) => {
-  const token =req.body.token || req.query.token || req.headers["auth-token"];
+  const token = req.body.token || req.query.token || req.headers["auth-token"];
   const decode = jwt.verify(token, "apappapjjgdoehjdgjgshgfd");
   const user = await User.findById({ _id: decode._id });
- 
-    try {
-      const users = token
-        ? await User.find().sort({ _id: -1 }).limit(5)
-        : await User.find();
-      res.status(200).json(users);
-    } catch (err) {
-      res.status(500).json(err);
-    }
-  
+
+  try {
+    const users = token
+      ? await User.find().sort({ _id: -1 }).limit(5)
+      : await User.find();
+    res.send(users);
+  } catch (err) {
+    throw new BadRequest("server error !", STATUS_CODES.INTERNAL_SERVER_ERROR);
+  }
 });
 
 //GET USER STATS
@@ -94,9 +106,9 @@ router.get("/stats", async (req, res) => {
         },
       },
     ]);
-    res.status(200).json(data)
+    res.send(data);
   } catch (err) {
-    res.status(500).json(err);
+    throw new BadRequest("server error !", STATUS_CODES.INTERNAL_SERVER_ERROR);
   }
 });
 
