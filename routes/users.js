@@ -1,115 +1,97 @@
-const router = require("express").Router();
-const User = require("../model/User");
-const CryptoJS = require("crypto-js");
-const verify = require("../verifyToken");
-const jwt = require("jsonwebtoken");
-const Errors = require("../errors");
+const router = require('express').Router();
+const { User } = require('../model/User');
+const auth = require('../middleware/auth');
+const Errors = require('../errors');
 
-const { UnAuthorisedError, BadRequest, STATUS_CODES, ErrorCodes } = Errors;
-//UPDATE
+const {
+  ResourceNotFoundError,
+} = Errors;
 
-router.put("/:id", verify, async (req, res) => {
-  const token = req.body.token || req.query.token || req.headers["auth-token"];
-  const decode = jwt.verify(token, "apappapjjgdoehjdgjgshgfd");
-  const user = await User.findById({ _id: decode._id });
-  if (user.isAdmin) {
-    try {
-      const updatedUser = await User.findByIdAndUpdate(
-        req.params.id,
-        {
-          $set: req.body,
-        },
-        { new: true }
+router.get('/favorites', auth, (req, res, next) => {
+  const { userId } = req;
+  User.findById({ _id: userId }).populate('favorites','title overview').then((result) => {
+    // console.log('result', result);
+    res.json(result);
+  });
+});
+// UPDATE
+
+router.patch('/:userId', auth, (req, res, next) => {
+  User.findOneAndUpdate({ _id: req.params.userId }, { $set: req.body })
+    .then((result) => {
+      if (!result) throw new ResourceNotFoundError('No user found to update');
+      res.json(result);
+    })
+    .catch((e) => next(e));
+});
+
+// DELETE
+router.delete('/:userId', auth, (req, res, next) => {
+  User.findByIdAndDelete(req.params.userId)
+    .then((result) => {
+      if (!result) throw new ResourceNotFoundError('No user found to delete');
+      res.json(result);
+    })
+    .catch((e) => next(e));
+});
+
+router.get('/me', auth, (req, res, next) => {
+  const { userId } = req;
+  User.findById(userId).then((user) => {
+    res.json(user);
+  })
+    .catch((e) => next(e));
+});
+// GET
+
+router.get('/:userId', auth, (req, res, next) => {
+  User.findById(req.params.userId)
+    .then((result) => {
+      if (!result) throw new ResourceNotFoundError('No user found ');
+      res.json(result);
+    })
+    .catch((e) => next(e));
+});
+
+// GET ALL
+
+router.get('/', auth, (req, res, next) => {
+  User.find()
+    .then((result) => {
+      if (!result.length) throw new ResourceNotFoundError('No users found ');
+      res.json(result);
+    })
+    .catch((e) => next(e));
+});
+
+// users favorite...
+router.post('/favorites', auth, (req, res, next) => {
+  const { userId } = req;
+  const { movieId } = req.body;
+
+  User.findById({ _id: userId })
+    .then((user) => {
+      console.log('user', user);
+      const isFavorite = user.favorites.includes(movieId);
+      return isFavorite;
+    })
+    .then((isFavorite) => {
+      if (isFavorite) {
+        return User.updateOne(
+          { _id: userId },
+          { $pull: { favorites: movieId } },
+        );
+      }
+      return User.updateOne(
+        { _id: userId },
+        { $push: { favorites: movieId } },
       );
-      res.send(updatedUser);
-    } catch (err) {
-      throw new BadRequest(
-        "server error !",
-        STATUS_CODES.INTERNAL_SERVER_ERROR
-      );
-    }
-  } else {
-    throw new UnAuthorisedError(
-      "Unauthorized request !",
-      STATUS_CODES.UNAUTHENTICATED_REQUEST
-    );
-  }
-});
-
-//DELETE
-router.delete("/:id", verify, async (req, res) => {
-  const token = req.body.token || req.query.token || req.headers["auth-token"];
-  const decode = jwt.verify(token, "apappapjjgdoehjdgjgshgfd");
-  const user = await User.findById({ _id: decode._id });
-  if (user.isAdmin) {
-    try {
-      await User.findByIdAndDelete(req.params.id);
-      res.send("User has been deleted...");
-    } catch (err) {
-      throw new BadRequest(
-        "server error !",
-        STATUS_CODES.INTERNAL_SERVER_ERROR
-      );
-    }
-  } else {
-    throw new UnAuthorisedError(
-      "Unauthorized request !",
-      STATUS_CODES.UNAUTHENTICATED_REQUEST
-    );
-  }
-});
-
-//GET
-
-router.get("/find/:id", async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-    const { password, ...info } = user._doc;
-    res.send(info);
-  } catch (err) {
-    throw new BadRequest("server error !", STATUS_CODES.INTERNAL_SERVER_ERROR);
-  }
-});
-
-//GET ALL
-router.get("/", verify, async (req, res) => {
-  const token = req.body.token || req.query.token || req.headers["auth-token"];
-  const decode = jwt.verify(token, "apappapjjgdoehjdgjgshgfd");
-  const user = await User.findById({ _id: decode._id });
-
-  try {
-    const users = token
-      ? await User.find().sort({ _id: -1 }).limit(5)
-      : await User.find();
-    res.send(users);
-  } catch (err) {
-    throw new BadRequest("server error !", STATUS_CODES.INTERNAL_SERVER_ERROR);
-  }
-});
-
-//GET USER STATS
-router.get("/stats", async (req, res) => {
-  const today = new Date();
-  const latYear = today.setFullYear(today.setFullYear() - 1);
-
-  try {
-    const data = await User.aggregate([
-      {
-        $project: {
-          month: { $month: "$createdAt" },
-        },
-      },
-      {
-        $group: {
-          _id: "$month",
-          total: { $sum: 1 },
-        },
-      },
-    ]);
-    res.send(data);
-  } catch (err) {
-    throw new BadRequest("server error !", STATUS_CODES.INTERNAL_SERVER_ERROR);
-  }
+    })
+    .then((result) => {
+      console.log('result', result);
+      res.json(result);
+    })
+    .catch((e) => next(e));
 });
 
 module.exports = router;

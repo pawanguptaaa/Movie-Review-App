@@ -1,100 +1,72 @@
-const router = require("express").Router();
-const Movie = require("../model/Movie");
-const verifyy = require("../verifyToken");
-const jwt = require("jsonwebtoken");
-const User = require("../model/User");
-const Errors = require("../errors");
+const router = require('express').Router();
+const { Movie } = require('../model/Movie');
+// const auth = require('../middleware/auth');
+const auth = require('../middleware/authAdmin');
+const Errors = require('../errors');
+const { User } = require('../model/User');
 
-const { UnAuthorisedError, BadRequest, STATUS_CODES, ErrorCodes } = Errors;
+const { ResourceNotFoundError } = Errors;
 
-//CREATE
+// CREATE....
 
-router.post("/", verifyy, async (req, res) => {
-  const token = req.body.token || req.query.token || req.headers["auth-token"];
-  const decode = jwt.verify(token, "apappapjjgdoehjdgjgshgfd");
-  const user = await User.findById({ _id: decode._id });
-  if (user.isAdmin) {
-    const newMovie = new Movie(req.body);
-    try {
-      const savedMovie = await newMovie.save();
-      res.send(savedMovie);
-    } catch (err) {
-      throw new BadRequest(
-        "server error !",
-        STATUS_CODES.INTERNAL_SERVER_ERROR
-      );
-    }
-  } else {
-    throw new UnAuthorisedError(
-      "Unauthorized request !",
-      STATUS_CODES.UNAUTHENTICATED_REQUEST
-    );
-  }
+router.post('/', auth, (req, res, next) => {
+  const newMovie = new Movie({ ...req.body });
+  newMovie
+    .save()
+    .then((result) => {
+      res.json(result);
+    })
+    .catch((e) => next(e));
 });
 
-//UPDATE
+// UPDATE
 
-router.put("/:id", verifyy, async (req, res) => {
-  const token = req.body.token || req.query.token || req.headers["auth-token"];
-  const decode = jwt.verify(token, "apappapjjgdoehjdgjgshgfd");
-  const user = await User.findById({ _id: decode._id });
-  if (user.isAdmin) {
-    try {
-      const updatedMovie = await Movie.findByIdAndUpdate(
-        req.params.id,
-        {
-          $set: req.body,
-        },
-        { new: true }
-      );
-      res.status(200).json(updatedMovie);
-    } catch (err) {
-      throw new BadRequest(
-        "server error !",
-        STATUS_CODES.INTERNAL_SERVER_ERROR
-      );
-    }
-  } else {
-    throw new UnAuthorisedError(
-      "Unauthorized request !",
-      STATUS_CODES.UNAUTHENTICATED_REQUEST
-    );
-  }
+router.patch('/:movieId', auth, async (req, res, next) => {
+  Movie.findByIdAndUpdate(
+    { _id: req.params.movieId },
+    { $set: req.body },
+    { new: true },
+  )
+    .then((result) => {
+      if (!result) {
+        throw new ResourceNotFoundError('No movie found of the given id');
+      }
+      res.json(result);
+    })
+    .catch((e) => next(e));
 });
 
-//DELETE
+// DELETE
 
-router.delete("/:id", verifyy, async (req, res) => {
-  const token = req.body.token || req.query.token || req.headers["auth-token"];
-  const decode = jwt.verify(token, "apappapjjgdoehjdgjgshgfd");
-  const user = await User.findById({ _id: decode._id });
-  if (user.isAdmin) {
-    try {
-      await Movie.findByIdAndDelete(req.params.id);
-      res.status(200).json("The movie has been deleted...");
-    } catch (err) {
-      throw new BadRequest(
-        "server error !",
-        STATUS_CODES.INTERNAL_SERVER_ERROR
-      );
-    }
-  } else {
-    throw new UnAuthorisedError(
-      "Unauthorized request !",
-      STATUS_CODES.UNAUTHENTICATED_REQUEST
-    );
-  }
+router.delete('/:movieId', auth, async (req, res, next) => {
+  Movie.findByIdAndDelete(req.params.movieId)
+    .then((result) => {
+      if (!result) throw new ResourceNotFoundError('No movie found to delete');
+      res.json({ message: ' Movie Deleted Successfully' });
+    })
+    .catch((e) => next(e));
 });
 
-//GET
+// GET
 
-router.get("/find/:id", verifyy, async (req, res) => {
-  try {
-    const movie = await Movie.findById(req.params.id);
-    res.send(movie);
-  } catch (err) {
-    throw new BadRequest("server error !", STATUS_CODES.INTERNAL_SERVER_ERROR);
-  }
+router.get('/:movieId', (req, res, next) => {
+  Movie.findById(req.params.movieId)
+    .then((result) => {
+      if (!result) throw new ResourceNotFoundError('No movie found');
+      res.json(result);
+    })
+    .catch((e) => next(e));
+});
+
+// GET ALL
+
+router.get('/', (req, res, next) => {
+  Movie.find()
+    .then((result) => {
+      if (!result.length) throw new ResourceNotFoundError('No movie found');
+      res.json({ data: { movies: result } });
+    })
+    .catch((e) => next(e));
 });
 
 module.exports = router;
