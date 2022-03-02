@@ -1,31 +1,74 @@
 const mongoose = require('mongoose');
-const userSchema = new mongoose.Schema({
-    name:{
-        type:String,
-        required:true,
-        trim:true,
-        min:6,
-        max:255
+
+const { Schema } = mongoose;
+const bcrypt = require('bcrypt');
+
+const saltRounds = 10;
+const jwt = require('jsonwebtoken');
+
+const userSchema = new mongoose.Schema(
+  {
+    username: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: true,
+      min: 6,
+      max: 255,
     },
-    email:{
-        type:String,
-        required:true,
-        unique:true,
-        min:6,
-        max:250,
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      min: 6,
+      max: 250,
     },
-    age:{
-        type:Number,
+    password: {
+      type: String,
+      required: true,
+      min: 6,
+      max: 1024,
     },
-    password:{
-        type:String,
-        required:true,
-        min:6,
-        max:1024,
+    token: {
+      type: String,
+      required: true,
     },
-    gender:{
-        type:String,
+    role: {
+      type: String,
+      default: 'user',
     },
-    isAdmin: { type: Boolean, default: false }
+    favorites: [{ type: Schema.Types.ObjectId, ref: 'Movie' }],
+
+  },
+  { timestamps: true },
+);
+
+userSchema.pre('save', function (next) {
+  const user = this;
+
+  if (user.isModified('password')) {
+    bcrypt.genSalt(saltRounds, (err, salt) => {
+      if (err) return next(err);
+
+      bcrypt.hash(user.password, salt, (err, hash) => {
+        if (err) return next(err);
+        user.password = hash;
+        next();
+      });
+    });
+  } else {
+    next();
+  }
 });
-    module.exports = mongoose.model('User', userSchema);
+
+userSchema.methods.comparePassword = async function (plainPassword) {
+  return bcrypt.compare(plainPassword, this.password);
+};
+
+userSchema.methods.generateToken = function () {
+  const user = this;
+  return jwt.sign({ userId: user._id.toString() }, process.env.JWT_SECRET);
+};
+
+const User = mongoose.model('User', userSchema);
+module.exports = { User };
