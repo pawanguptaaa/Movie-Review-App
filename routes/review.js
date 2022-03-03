@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const { Review } = require('../model/Review');
 const auth = require('../middleware/auth');
 const { ResourceNotFoundError } = require('../errors');
@@ -28,10 +29,13 @@ router.get('/', (req, res, next) => {
 // Get Review by Review Id.............
 
 router.get('/:reviewId', (req, res, next) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.reviewId)) {
+    return res.status(400).send('Invalid Review Id');
+  }
   const { reviewId } = req.params;
   Review.findById(reviewId)
     .then((result) => {
-      if (!result.length) throw new ResourceNotFoundError('No review found');
+      if (!result) throw new ResourceNotFoundError('No review found');
       res.json(result);
     })
     .catch((e) => next(e));
@@ -40,10 +44,15 @@ router.get('/:reviewId', (req, res, next) => {
 // update the review by movieId and userId ......
 
 router.patch('/:movieId', auth, (req, res, next) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.movieId)) {
+    return res.status(400).send('Invalid MovieId or UserId');
+  }
   const { movieId } = req.params;
   const { userId } = req;
-  Review.findOneAndUpdate({ movieId, userId }, { $set: req.body })
+  Review.findOneAndUpdate({ movieId, userId }, { $set: req.body }, { new: true })
     .then((result) => {
+      console.log('res', result);
+      if (!result) throw new ResourceNotFoundError('No review found');
       res.json(result);
     })
     .catch((e) => next(e));
@@ -52,10 +61,14 @@ router.patch('/:movieId', auth, (req, res, next) => {
 // Delete Review by Review Id
 
 router.delete('/:reviewId', (req, res, next) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.reviewId)) {
+    return res.status(400).send('Invalid ReviewId');
+  }
   const { reviewId } = req.params;
   Review.findByIdAndDelete(reviewId)
     .then((result) => {
-      res.json(result);
+      if (!result) throw new ResourceNotFoundError('No review found');
+      res.json({ message: 'Review Deleted successfully' });
     })
     .catch((e) => next(e));
 });
