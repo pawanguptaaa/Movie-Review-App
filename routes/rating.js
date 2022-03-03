@@ -2,6 +2,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const { Rating } = require('../model/Rating');
+const { Movie } = require('../model/Movie');
 const auth = require('../middleware/auth');
 const Errors = require('../errors');
 
@@ -47,6 +48,9 @@ router.get('/', (req, res, next) => {
 
 // get single rating by movieId and userId
 router.get('/:movieId', auth, (req, res, next) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.movieId)) {
+    return res.status(400).send('Invalid Movie Id');
+  }
   const { movieId } = req.params;
   const { userId } = req;
   Rating.findOne({ movieId, userId })
@@ -58,6 +62,9 @@ router.get('/:movieId', auth, (req, res, next) => {
 });
 
 router.delete('/:movieId', auth, (req, res, next) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.movieId)) {
+    return res.status(400).send('Invalid Movie Id');
+  }
   const { movieId } = req.params;
   const { userId } = req;
   Rating.findOneAndDelete({ movieId, userId })
@@ -67,5 +74,6 @@ router.delete('/:movieId', auth, (req, res, next) => {
     })
     .catch((e) => next(e));
 });
+
 
 module.exports = router;
