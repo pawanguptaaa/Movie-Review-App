@@ -1,7 +1,9 @@
 const router = require('express').Router();
+const mongoose = require('mongoose');
 const { User } = require('../model/User');
 const auth = require('../middleware/auth');
 const Errors = require('../errors');
+
 
 const {
   ResourceNotFoundError,
@@ -9,7 +11,7 @@ const {
 
 router.get('/favorites', auth, (req, res, next) => {
   const { userId } = req;
-  User.findById({ _id: userId }).populate('favorites','title overview').then((result) => {
+  User.findById({ _id: userId }).populate('favorites', 'title overview').then((result) => {
     // console.log('result', result);
     res.json(result);
   });
@@ -17,6 +19,9 @@ router.get('/favorites', auth, (req, res, next) => {
 // UPDATE
 
 router.patch('/:userId', auth, (req, res, next) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.userId)) {
+    return res.status(400).send('Invalid User Id');
+  }
   User.findOneAndUpdate({ _id: req.params.userId }, { $set: req.body })
     .then((result) => {
       if (!result) throw new ResourceNotFoundError('No user found to update');
@@ -27,6 +32,9 @@ router.patch('/:userId', auth, (req, res, next) => {
 
 // DELETE
 router.delete('/:userId', auth, (req, res, next) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.userId)) {
+    return res.status(400).send('Invalid User Id');
+  }
   User.findByIdAndDelete(req.params.userId)
     .then((result) => {
       if (!result) throw new ResourceNotFoundError('No user found to delete');
@@ -45,6 +53,9 @@ router.get('/me', auth, (req, res, next) => {
 // GET
 
 router.get('/:userId', auth, (req, res, next) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.userId)) {
+    return res.status(400).send('Invalid User Id');
+  }
   User.findById(req.params.userId)
     .then((result) => {
       if (!result) throw new ResourceNotFoundError('No user found ');
@@ -71,7 +82,6 @@ router.post('/favorites', auth, (req, res, next) => {
 
   User.findById({ _id: userId })
     .then((user) => {
-      console.log('user', user);
       const isFavorite = user.favorites.includes(movieId);
       return isFavorite;
     })
@@ -88,7 +98,6 @@ router.post('/favorites', auth, (req, res, next) => {
       );
     })
     .then((result) => {
-      console.log('result', result);
       res.json(result);
     })
     .catch((e) => next(e));
