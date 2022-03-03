@@ -1,12 +1,23 @@
 # Movie Review App
 
-## Installation
-Clone it, then get your dependencies with npm install like usual.
-Then create an .env file on the root and populate it with your MongoDB connection string.
-The package dotenv has already been installed and will allow you to access that .env file.
+Created movie review app using Node/Express, MongoDB and Mongoose
+
+
 
 ## Installation
-#### Clone the movieReviewApp
 
-## Run the project
-Then start the server with npm run dev
+1- Clone the Movie Review App
+
+```bash
+  git clone https://github.com/pawanguptaaa/nodeApp.git
+```
+2- Install server NPM packages (inside root folder)
+
+```bash
+  npm install
+```
+3 -Now Run the command
+```bash
+  npm run dev
+```
+    
