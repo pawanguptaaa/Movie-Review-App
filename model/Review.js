@@ -1,30 +1,30 @@
-const mongoose = require("mongoose");
-const Schema = mongoose.Schema;
+const mongoose = require('mongoose');
+
+const { Schema } = mongoose;
 
 // change comment to review
 const reviewSchema = mongoose.Schema(
   {
     userId: {
       type: Schema.Types.ObjectId,
-      required: true
-      
+      required: true,
     },
     movieId: {
       type: Schema.Types.ObjectId,
-      required:true
+      required: true,
     },
     username: {
       type: String,
-      required:true
+      required: true,
     },
     review: {
       type: String,
-      required:true
+      required: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-const Review = mongoose.model("Review", reviewSchema);
+const Review = mongoose.model('Review', reviewSchema);
 
 module.exports = { Review };

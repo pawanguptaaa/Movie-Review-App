@@ -33,6 +33,7 @@ const MovieSchema = new mongoose.Schema(
       required: true,
     },
     genre: { type: [String], required: true },
+
   },
 
   { timestamps: true },

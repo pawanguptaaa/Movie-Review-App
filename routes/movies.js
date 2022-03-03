@@ -1,12 +1,28 @@
+/* eslint-disable object-shorthand */
 const router = require('express').Router();
 const mongoose = require('mongoose');
 const { Movie } = require('../model/Movie');
+const cloudinary = require('cloudinary').v2;
 // const auth = require('../middleware/auth');
 const auth = require('../middleware/authAdmin');
 const Errors = require('../errors');
 const { User } = require('../model/User');
 
 const { ResourceNotFoundError, BadRequest } = Errors;
+
+router.get('/cloudinary', (req, res) => {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const timestamp = Math.round(new Date().getTime() / 1000);
+  const signature = cloudinary.utils.api_sign_request(
+    {
+      timestamp: timestamp,
+      folder: 'movie_images',
+    },
+    process.env.CLOUDINARY_API_SECRET
+  );
+  res.json({ apiKey, cloudName, signature, timestamp });
+});
 
 // CREATE....
 
@@ -22,7 +38,7 @@ router.post('/', auth, (req, res, next) => {
 
 // UPDATE
 
-router.patch('/:movieId', auth, async (req, res, next) => {
+router.patch('/:movieId', auth, (req, res, next) => {
   if (!mongoose.Types.ObjectId.isValid(req.params.movieId)) {
     return res.status(400).send('Invalid Movie Id');
   }

@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const { Review } = require('../model/Review');
 const auth = require('../middleware/auth');
+const authAdmin = require('../middleware/auth');
 const { ResourceNotFoundError } = require('../errors');
 
 const router = express.Router();
@@ -12,6 +13,15 @@ router.post('/', auth, (req, res, next) => {
   review
     .save()
     .then((result) => res.json(result))
+    .catch((e) => next(e));
+});
+
+router.get('/', authAdmin, (req, res, next) => {
+  Review.find()
+    .then((result) => {
+      if (!result.length) throw new ResourceNotFoundError('No review found');
+      res.json(result);
+    })
     .catch((e) => next(e));
 });
 
