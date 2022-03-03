@@ -1,11 +1,12 @@
 const router = require('express').Router();
+const mongoose = require('mongoose');
 const { Movie } = require('../model/Movie');
 // const auth = require('../middleware/auth');
 const auth = require('../middleware/authAdmin');
 const Errors = require('../errors');
 const { User } = require('../model/User');
 
-const { ResourceNotFoundError } = Errors;
+const { ResourceNotFoundError, BadRequest } = Errors;
 
 // CREATE....
 
@@ -22,6 +23,9 @@ router.post('/', auth, (req, res, next) => {
 // UPDATE
 
 router.patch('/:movieId', auth, async (req, res, next) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.movieId)) {
+    return res.status(400).send('Invalid Movie Id');
+  }
   Movie.findByIdAndUpdate(
     { _id: req.params.movieId },
     { $set: req.body },
@@ -29,7 +33,7 @@ router.patch('/:movieId', auth, async (req, res, next) => {
   )
     .then((result) => {
       if (!result) {
-        throw new ResourceNotFoundError('No movie found of the given id');
+        throw new ResourceNotFoundError('No movie found for the given id');
       }
       res.json(result);
     })
@@ -39,6 +43,9 @@ router.patch('/:movieId', auth, async (req, res, next) => {
 // DELETE
 
 router.delete('/:movieId', auth, async (req, res, next) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.movieId)) {
+    return res.status(400).send('Invalid Movie Id');
+  }
   Movie.findByIdAndDelete(req.params.movieId)
     .then((result) => {
       if (!result) throw new ResourceNotFoundError('No movie found to delete');
@@ -50,6 +57,9 @@ router.delete('/:movieId', auth, async (req, res, next) => {
 // GET
 
 router.get('/:movieId', (req, res, next) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.movieId)) {
+    return res.status(400).send('Invalid Movie Id');
+  }
   Movie.findById(req.params.movieId)
     .then((result) => {
       if (!result) throw new ResourceNotFoundError('No movie found');
